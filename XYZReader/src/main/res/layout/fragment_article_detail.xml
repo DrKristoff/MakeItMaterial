@@ -19,10 +19,13 @@
                 android:layout_height="wrap_content"
                 android:background="@color/theme_primary_light">
                 <!--suppress AndroidLintContentDescription -->
+
                 <ImageView
                     android:id="@+id/photo"
-                    android:layout_width="100dp"
-                    android:layout_height="100dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scaleType="centerCrop"
+                    android:transitionName="@string/detailImage"
                      />
 
                 <View
@@ -94,7 +97,6 @@
 
     <ImageButton android:id="@+id/share_fab"
         android:stateListAnimator="@anim/fab_state_list_anim"
-        android:background="@drawable/add_fab_background"
         android:layout_gravity="bottom|end"
         android:layout_marginRight="@dimen/fab_margin"
         android:layout_marginBottom="@dimen/fab_margin"
