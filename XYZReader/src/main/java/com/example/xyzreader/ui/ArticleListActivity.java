@@ -9,16 +9,18 @@ import android.content.IntentFilter;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
-import android.util.TypedValue;
-import android.view.MenuItem;
+import android.transition.Fade;
+import android.transition.Scene;
+import android.transition.Slide;
+import android.transition.TransitionInflater;
+import android.transition.TransitionManager;
+import android.util.Pair;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -45,6 +47,8 @@ public class ArticleListActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_article_list);
+
+        setupWindowAnimations();
 
 /*        mToolbar = (Toolbar) findViewById(R.id.toolbar);
 
@@ -132,22 +136,35 @@ public class ArticleListActivity extends AppCompatActivity implements
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = getLayoutInflater().inflate(R.layout.list_item_article, parent, false);
             final ViewHolder vh = new ViewHolder(view);
-            final String transitionName = getResources().getString(R.string.detailImage);
+
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Bundle bundle = ActivityOptions
-                            .makeSceneTransitionAnimation(
-                                    ArticleListActivity.this,
-                                    view,
-                                    transitionName)
-                            .toBundle();
-                    startActivity(new Intent(Intent.ACTION_VIEW,
-                            ItemsContract.Items.buildItemUri(getItemId(vh.getAdapterPosition()))),bundle);
+
+                   View iv = view.findViewById(R.id.thumbnail);
+                    View titleTextView = view.findViewById(R.id.article_title);
+                    View bylineTextView = view.findViewById(R.id.article_subtitle);
+
+                    ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
+                            ArticleListActivity.this,
+                            Pair.create(iv, vh.imageTransitionName),
+                            Pair.create(titleTextView, vh.titleTransitionName),
+                            Pair.create(bylineTextView, vh.bylineTransitionName));
+
+                    Intent intent = new Intent(Intent.ACTION_VIEW,
+                            ItemsContract.Items.buildItemUri(getItemId(vh.getAdapterPosition())));
+
+                    intent.putExtra("image",vh.imageTransitionName);
+                    intent.putExtra("title",vh.titleTransitionName);
+                    intent.putExtra("byline",vh.bylineTransitionName);
+
+                    startActivity(intent, options.toBundle());
                 }
             });
             return vh;
         }
+
+
 
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
@@ -164,6 +181,11 @@ public class ArticleListActivity extends AppCompatActivity implements
                     mCursor.getString(ArticleLoader.Query.THUMB_URL),
                     ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
             holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
+
+            holder.imageTransitionName = getResources().getString(R.string.detailImage) + String.valueOf(position);
+            holder.titleTransitionName = getResources().getString(R.string.articleName) + String.valueOf(position);
+            holder.bylineTransitionName = getResources().getString(R.string.articleByline) + String.valueOf(position);
+
         }
 
         @Override
@@ -172,10 +194,20 @@ public class ArticleListActivity extends AppCompatActivity implements
         }
     }
 
+    private void setupWindowAnimations() {
+        Fade fade = (Fade)TransitionInflater.from(this).inflateTransition(R.transition.fade);
+        getWindow().setEnterTransition(fade);
+
+        Slide slide = (Slide)TransitionInflater.from(this).inflateTransition(R.transition.slide);
+        getWindow().setExitTransition(slide);
+        getWindow().setReturnTransition(slide);
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public DynamicHeightNetworkImageView thumbnailView;
         public TextView titleView;
         public TextView subtitleView;
+        public String imageTransitionName, titleTransitionName, bylineTransitionName;
 
         public ViewHolder(View view) {
             super(view);
