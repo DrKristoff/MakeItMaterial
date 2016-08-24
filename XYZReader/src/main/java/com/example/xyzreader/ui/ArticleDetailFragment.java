@@ -5,6 +5,7 @@ import android.animation.ObjectAnimator;
 import android.app.Fragment;
 import android.app.LoaderManager;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.Loader;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -13,6 +14,8 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ShareCompat;
 import android.support.v7.graphics.Palette;
 import android.text.Html;
@@ -26,6 +29,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
@@ -43,9 +47,12 @@ public class ArticleDetailFragment extends Fragment implements
 
     public static final String ARG_ITEM_ID = "item_id";
     private static final float PARALLAX_FACTOR = 1.25f;
+    public static final String ARG_POSITION = "item_position";
 
     private Cursor mCursor;
     private long mItemId;
+    private String mTransitionNameIndex;
+    private boolean mActive = false;
     private View mRootView;
     private int mMutedColor = 0xFF333333;
     public ObservableScrollView mScrollView;
@@ -55,6 +62,7 @@ public class ArticleDetailFragment extends Fragment implements
     private int mTopInset;
     private View mPhotoContainerView;
     private ImageView mPhotoView;
+    private TextView mTitleView, mSubtitleView;
     private int mScrollY;
     private boolean mIsCard = false;
     private int mStatusBarFullOpacityBottom;
@@ -65,12 +73,14 @@ public class ArticleDetailFragment extends Fragment implements
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
      */
+
     public ArticleDetailFragment() {
     }
 
-    public static ArticleDetailFragment newInstance(long itemId) {
+    public static ArticleDetailFragment newInstance(long itemId, int position, int mStartingPosition) {
         Bundle arguments = new Bundle();
         arguments.putLong(ARG_ITEM_ID, itemId);
+        arguments.putInt(ARG_POSITION,position);
         ArticleDetailFragment fragment = new ArticleDetailFragment();
         fragment.setArguments(arguments);
 
@@ -96,12 +106,13 @@ public class ArticleDetailFragment extends Fragment implements
             mItemId = getArguments().getLong(ARG_ITEM_ID);
         }
 
-       /* Bundle bundle = this.getArguments();
-        imageString = bundle.getString("image");
-        titleString = bundle.getString("title");
-        bylineString = bundle.getString("byline");*/
-
-
+        if (getArguments().containsKey(ARG_POSITION)) {
+            mActive = true;
+            mTransitionNameIndex = String.valueOf(getArguments().getInt(ARG_POSITION));
+            imageString = getResources().getString(R.string.detailImage) + mTransitionNameIndex;
+            titleString = getResources().getString(R.string.articleName) + mTransitionNameIndex;
+            bylineString = getResources().getString(R.string.articleByline) + mTransitionNameIndex;
+        }
 
         mIsCard = getResources().getBoolean(R.bool.detail_is_card);
         mStatusBarFullOpacityBottom = getResources().getDimensionPixelSize(
@@ -111,6 +122,34 @@ public class ArticleDetailFragment extends Fragment implements
 
     public ArticleDetailActivity getActivityCast() {
         return (ArticleDetailActivity) getActivity();
+    }
+
+    @Nullable
+    ImageView getImageView() {
+        if (isViewInBounds(getActivity().getWindow().getDecorView(), mPhotoView)) {
+            return mPhotoView;
+        }
+        return null;
+    }
+    @Nullable
+    TextView getTitleView() {
+        if (isViewInBounds(getActivity().getWindow().getDecorView(), mTitleView)) {
+            return mTitleView;
+        }
+        return null;
+    }
+    @Nullable
+    TextView getSubtitleView() {
+        if (isViewInBounds(getActivity().getWindow().getDecorView(), mSubtitleView)) {
+            return mSubtitleView;
+        }
+        return null;
+    }
+
+    private static boolean isViewInBounds(@NonNull View container, @NonNull View view) {
+        Rect containerBounds = new Rect();
+        container.getHitRect(containerBounds);
+        return view.getLocalVisibleRect(containerBounds);
     }
 
     @Override
@@ -137,6 +176,9 @@ public class ArticleDetailFragment extends Fragment implements
             }
         });
 
+        /*Bundle bundle = getActivity().getIntent().getExtras();
+        String transitionNameIndex = bundle.getString("position");*/
+
         mScrollView = (ObservableScrollView) mRootView.findViewById(R.id.scrollview);
         mScrollView.setCallbacks(new ObservableScrollView.Callbacks() {
             @Override
@@ -149,7 +191,6 @@ public class ArticleDetailFragment extends Fragment implements
         });
 
         mPhotoView = (ImageView) mRootView.findViewById(R.id.photo);
-        //mPhotoView.setTransitionName(imageString);
         mPhotoContainerView = mRootView.findViewById(R.id.photo_container);
 
         mStatusBarColorDrawable = new ColorDrawable(0);
@@ -163,6 +204,11 @@ public class ArticleDetailFragment extends Fragment implements
                         .getIntent(), getString(R.string.action_share)));
             }
         });
+
+
+        if (mActive){
+            mPhotoView.setTransitionName(imageString);
+        }
 
         bindViews();
         updateStatusBar();
@@ -183,6 +229,7 @@ public class ArticleDetailFragment extends Fragment implements
         }
         mStatusBarColorDrawable.setColor(color);
         mDrawInsetsFrameLayout.setInsetBackground(mStatusBarColorDrawable);
+
     }
 
     static float progress(float v, float min, float max) {
@@ -204,11 +251,14 @@ public class ArticleDetailFragment extends Fragment implements
             return;
         }
 
-        TextView titleView = (TextView) mRootView.findViewById(R.id.article_title);
-        //titleView.setTransitionName(titleString);
-        TextView bylineView = (TextView) mRootView.findViewById(R.id.article_byline);
-        //bylineView.setTransitionName(bylineString);
-        bylineView.setMovementMethod(new LinkMovementMethod());
+        mTitleView = (TextView) mRootView.findViewById(R.id.article_title);
+        mSubtitleView = (TextView) mRootView.findViewById(R.id.article_byline);
+
+        if(mActive){
+            mTitleView.setTransitionName(titleString);
+            mSubtitleView.setTransitionName(bylineString);
+        }
+        mSubtitleView.setMovementMethod(new LinkMovementMethod());
         TextView bodyView = (TextView) mRootView.findViewById(R.id.article_body);
         bodyView.setTypeface(Typeface.createFromAsset(getResources().getAssets(), "Rosario-Regular.ttf"));
 
@@ -216,8 +266,8 @@ public class ArticleDetailFragment extends Fragment implements
             mRootView.setAlpha(0);
             mRootView.setVisibility(View.VISIBLE);
             mRootView.animate().alpha(1);
-            titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
-            bylineView.setText(Html.fromHtml(
+            mTitleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
+            mSubtitleView.setText(Html.fromHtml(
                     DateUtils.getRelativeTimeSpanString(
                             mCursor.getLong(ArticleLoader.Query.PUBLISHED_DATE),
                             System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
@@ -238,6 +288,11 @@ public class ArticleDetailFragment extends Fragment implements
                                 mRootView.findViewById(R.id.meta_bar)
                                         .setBackgroundColor(mMutedColor);
                                 updateStatusBar();
+
+                                Intent intent = new Intent("BEGIN_TRANSITION");
+                                if(getActivity()!=null){
+                                    getActivity().sendBroadcast(intent);
+                                }
                             }
                         }
 
@@ -248,8 +303,8 @@ public class ArticleDetailFragment extends Fragment implements
                     });
         } else {
             mRootView.setVisibility(View.GONE);
-            titleView.setText("N/A");
-            bylineView.setText("N/A" );
+            mTitleView.setText("N/A");
+            mSubtitleView.setText("N/A" );
             bodyView.setText("N/A");
         }
     }

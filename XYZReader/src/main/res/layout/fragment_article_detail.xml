@@ -25,6 +25,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="350dp"
                     android:scaleType="centerCrop"
+                    android:transitionName="@string/detailImage"
                      />
 <!--
                 <View
@@ -66,6 +67,7 @@
                         android:fontFamily="sans-serif-condensed"
                         android:textColor="#fff"
                         android:textStyle="bold"
+                        android:transitionName="@string/articleName"
                         android:textSize="@dimen/detail_title_text_size"
                         android:lineSpacingMultiplier="0.9" />
 
@@ -74,6 +76,7 @@
                         style="?android:attr/textAppearanceSmall"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:transitionName="@string/articleByline"
                         android:textColor="#8fff" />
                 </LinearLayout>
 
