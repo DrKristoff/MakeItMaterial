@@ -12,4 +12,6 @@
     <dimen name="card_elevation">2dp</dimen>
     <dimen name="init_scroll_up_distance">200dp</dimen>
 
+    <dimen name="card_view_margins">4dp</dimen>
+
 </resources>

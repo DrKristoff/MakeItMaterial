@@ -9,5 +9,7 @@
 <color name="theme_secondary_text">#757575</color>
 <color name="theme_icons">#FFFFFF</color>
 <color name="theme_divider">#BDBDBD</color>
+
+    <color name="article_subtitle">#6000</color>
 </resources>
 
